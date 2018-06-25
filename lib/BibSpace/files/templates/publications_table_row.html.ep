@@ -81,7 +81,7 @@ class="publication_table_row" publication-table-row-data-id="<%=$entry_obj->id%>
                     <i class="fa fa-microphone"></i>
             </a>
             <a href="<%= url_for('make_press', id=>$entry_obj->{id} ) %>" class="btn <%=$t3%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to PRESS" data-container="body">
-                    <i class="fa fa-newspaper"></i>
+                    <i class="fa fa-microphone"></i>
             </a>
         </div>
 
