@@ -66,6 +66,10 @@ class="publication_table_row" publication-table-row-data-id="<%=$entry_obj->id%>
                     % $t2="btn-danger";
                     % $extra_msg = ". Talks should have bibtex_type set to 'misc'"; 
                 %}
+                %elsif ($entry_obj->is_press) {
+                    % $t1 = "btn-default";
+                    % $t2 = "btn-success";
+                %}
             %}
              <a href="<%= url_for('make_paper', id=>$entry_obj->id ) %>" class="btn <%=$t1%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to PAPER" data-container="body">
                     <span class="glyphicon glyphicon-file"></span>
