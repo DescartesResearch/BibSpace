@@ -73,6 +73,9 @@ class="publication_table_row" publication-table-row-data-id="<%=$entry_obj->id%>
             <a href="<%= url_for('make_talk', id=>$entry_obj->{id} ) %>" class="btn <%=$t2%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to TALK<%=$extra_msg%>" data-container="body">
                     <i class="fa fa-microphone"></i>
             </a>
+            <a href="<%= url_for('make_press', id=>$entry_obj->{id} ) %>" class="btn <%=$t2%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to PRESS<%=$extra_msg%>" data-container="body">
+                    <i class="fas fa-newspaper"></i>
+            </a>
         </div>
 
         <button class="btn btn-default btn-sm" data-toggle="tooltip" data-placement="top" title="Created: <%=$entry_obj->get_creation_time%>">

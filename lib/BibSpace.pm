@@ -822,6 +822,10 @@ sub setup_routes {
         ->to('publications#make_talk')
         ->name('make_talk');
 
+    $manager_user->get('/publications/make_press/:id')
+        ->to('publications#make_press')
+        ->name('make_press');
+
     $manager_user->get('/publications/regenerate/:id')
         ->to('publications#regenerate_html')
         ->name('regenerate_publication');

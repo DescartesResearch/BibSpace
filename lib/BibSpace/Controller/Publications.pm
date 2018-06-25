@@ -356,6 +356,11 @@ sub make_talk {
   $self->redirect_to($self->get_referrer);
 }
 
+sub make_press {
+  my $self = shift;
+  my $id   = $self->param('id');
+}
+
 sub delete_orphaned {
   my $self = shift;
 
