@@ -7,7 +7,7 @@
 cd ~
 sudo aptitude update
 sudo aptitude upgrade
-sudo aptitude install git curl vim cpanminus mysql-server mysql-client libssl-dev bibtex2html libbtparse-dev libdbd-mysql-perl
+sudo aptitude install build-essential make git curl vim cpanminus mysql-server mysql-client libssl-dev bibtex2html libbtparse-dev libdbd-mysql-perl
 
 # get code
 git clone https://github.com/vikin91/BibSpace.git --depth 1
