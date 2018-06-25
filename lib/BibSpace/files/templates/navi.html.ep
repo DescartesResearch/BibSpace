@@ -66,6 +66,13 @@
               <span class="badge"><%= num_pubs('talk')%></span>
             </a>
         </li>
+        <li>
+            <a href="<%= url_for('/publications')->query(entry_type=>'press', year=>current_year)%>">
+                <i class="fa fa-microphone"></i>
+                <span>Show press releases</span>
+                <span class="badge"><%= num_pubs('press')%></span>
+            </a>
+        </li>
         <li class="divider"></li>
         <li>
             <a href="<%= url_for('/publications/recently_added/10')%>"><span class="glyphicon glyphicon-plus" style="color: #5CB85C;"></span><span class="glyphicon glyphicon-time"  style="color: #5BC0DE;"></span> <span>Recently added <span class="badge">10</span></span></a>
