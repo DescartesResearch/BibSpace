@@ -155,7 +155,7 @@ sub create_main_db {
     $dbh->do(
       "CREATE TABLE IF NOT EXISTS `Entry`(
           id INTEGER(8) PRIMARY KEY AUTO_INCREMENT,
-          entry_type ENUM('paper', 'talk') NOT NULL,
+          entry_type ENUM('paper', 'talk', 'press') NOT NULL,
           bibtex_key VARCHAR(250), 
           bibtex_type VARCHAR(50)DEFAULT NULL, 
           bib TEXT, 

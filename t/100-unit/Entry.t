@@ -29,6 +29,8 @@ foreach my $entry (@all_entries) {
   ok($entry->is_paper);
   $entry->make_talk;
   ok($entry->is_talk);
+  $entry->make_press;
+  ok($entry->is_press);
 
   $entry->hide;
   ok($entry->is_hidden);

@@ -359,6 +359,19 @@ sub make_talk {
 sub make_press {
   my $self = shift;
   my $id   = $self->param('id');
+
+  $self->app->logger->info("Make entry '$id' 'press'.");
+
+  my $entry = $self->app->repo->entries_find(sub {$_->id == $id });
+
+  if (defined $entry) {
+    $entry->make_press();
+    $self->app->repo->entries_update($entry);
+  } else {
+    $self->flash(msg => "There is no entry with id $id");
+  }
+
+  $self->redirect_to($self->get_referrer);
 }
 
 sub delete_orphaned {

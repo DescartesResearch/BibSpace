@@ -289,6 +289,17 @@ sub is_talk {
   return;
 }
 
+sub make_press {
+  my $self = shift;
+  $self->entry_type('press');
+}
+
+sub is_press {
+  my $self = shift;
+  return 1 if $self->entry_type eq 'press';
+  return;
+}
+
 sub matches_our_type {
   my $self  = shift;
   my $oType = shift;
