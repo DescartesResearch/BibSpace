@@ -28,7 +28,6 @@ json_data/
 
 *.swp
 
-public/
 
 BibspacePrereqs/
 Dockerfile
