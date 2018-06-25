@@ -105,7 +105,7 @@ sub landing_types {
     @entries_to_show = $self->get_papers_for_landing;
   }
   elsif ($entry_type and $entry_type eq 'press') {
-    $hash_our_type_to_description{'press'} = 'Press';
+    $hash_our_type_to_description{'press'} = 'Press Releases';
     @section_names = ('press');
     @entries_to_show = $self->get_press_for_landing;
   }
@@ -115,7 +115,7 @@ sub landing_types {
     # this needs to be added manually as talks are special
     $hash_our_type_to_description{'talk'} = "Talks";
     push @section_names, 'talk';
-    $hash_our_type_to_description{'press'} = "Press";
+    $hash_our_type_to_description{'press'} = "Press Releases";
     push @section_names, 'press';
     @entries_to_show = $self->get_entries_for_landing;
   }
