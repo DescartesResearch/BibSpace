@@ -267,7 +267,7 @@ sub display_landing {
     $display_tag_name =~ s/_/\ /g;
   }
 
-  my $title = "Publications, Talks and Press";
+  my $title = "Publications, Talks and Press Releases";
   $title = " Publications "
     if $self->param('entry_type')
     and $self->param('entry_type') eq 'paper';
