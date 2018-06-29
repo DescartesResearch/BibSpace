@@ -69,7 +69,7 @@
         <li>
             <a href="<%= url_for('/publications')->query(entry_type=>'press', year=>current_year)%>">
                 <span class="glyphicon glyphicon-bullhorn"></span>
-                <span>Show press releases</span>
+                <span>Show press coverage</span>
                 <span class="badge"><%= num_pubs('press')%></span>
             </a>
         </li>
