@@ -80,7 +80,7 @@ class="publication_table_row" publication-table-row-data-id="<%=$entry_obj->id%>
             <a href="<%= url_for('make_talk', id=>$entry_obj->{id} ) %>" class="btn <%=$t2%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to TALK<%=$extra_msg%>" data-container="body">
                     <i class="fa fa-microphone"></i>
             </a>
-            <a href="<%= url_for('make_press', id=>$entry_obj->{id} ) %>" class="btn <%=$t3%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to PRESS" data-container="body">
+            <a href="<%= url_for('make_press', id=>$entry_obj->{id} ) %>" class="btn <%=$t3%> btn-sm" data-toggle="tooltip" data-placement="top" title="Click to set entry type to PRESS COVERAGE" data-container="body">
                     <span class="glyphicon glyphicon-bullhorn"></span>
             </a>
         </div>
