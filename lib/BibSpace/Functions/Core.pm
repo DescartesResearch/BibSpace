@@ -381,7 +381,7 @@ sub nohtml {
 sub get_generic_type_description {
   my $type_desc = shift;
   return "Talks " if $type_desc eq 'talk';
-  return "Press Releases" if $type_desc eq 'press';
+  return "Press Coverage" if $type_desc eq 'press';
   return "Publications of type " . $type_desc;
 }
 
