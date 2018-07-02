@@ -29,7 +29,6 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Base 'Mojolicious::Plugin::Config';
 use Mojo::Log;
 
-####################################################################################
 sub index {
   my $self = shift;
   my $dbh  = $self->app->db;
@@ -55,7 +54,6 @@ sub index {
   $self->render(template => 'backup/backup');
 }
 
-####################################################################################
 sub save {
   my $self = shift;
 
@@ -69,7 +67,7 @@ sub save {
   }
   $self->redirect_to('backup_index');
 }
-####################################################################################
+
 sub save_mysql {
   my $self = shift;
 
@@ -83,7 +81,7 @@ sub save_mysql {
   }
   $self->redirect_to('backup_index');
 }
-####################################################################################
+
 sub cleanup {
   my $self = shift;
   my $age_treshold
@@ -102,8 +100,6 @@ sub cleanup {
 # disabling redirects for test and putting here referrer allows test to pass
   $self->redirect_to('backup_index');
 }
-
-####################################################################################
 
 sub backup_download {
   my $self = shift;
@@ -124,7 +120,6 @@ sub backup_download {
   }
 }
 
-####################################################################################
 sub delete_backup {
   my $self = shift;
   my $uuid = $self->param('id');
@@ -171,7 +166,6 @@ sub delete_backup {
   $self->redirect_to($self->url_for('backup_index'));
 }
 
-####################################################################################
 sub restore_backup {
   my $self = shift;
   my $uuid = $self->param('id');
@@ -203,7 +197,5 @@ sub restore_backup {
   }
   $self->redirect_to('backup_index');
 }
-
-####################################################################################
 
 1;

@@ -43,7 +43,6 @@ has 'bibtexTypes' => (
   },
 );
 
-####################################################################################
 sub toString {
   my $self = shift;
   return
@@ -54,7 +53,7 @@ sub toString {
     . " bibtex types: ["
     . join(', ', $self->bibtexTypes_all) . "]\n";
 }
-####################################################################################
+
 sub equals {
   my $self = shift;
   my $obj  = shift;
@@ -62,12 +61,12 @@ sub equals {
     unless ref($self) eq ref($obj);
   return $self->our_type eq $obj->our_type;
 }
-####################################################################################
+
 sub num_bibtex_types {
   my $self = shift;
   return $self->bibtexTypes_count;
 }
-####################################################################################
+
 sub get_first_bibtex_type {
   my $self = shift;
   my @all  = $self->bibtexTypes_all;
@@ -76,7 +75,7 @@ sub get_first_bibtex_type {
   }
   return;
 }
-####################################################################################
+
 sub is_original_bibtex_type {
   my $self = shift;
   if (  $self->num_bibtex_types == 1
@@ -86,7 +85,7 @@ sub is_original_bibtex_type {
   }
   return;
 }
-####################################################################################
+
 sub can_be_deleted {
   my $self = shift;
   return if $self->num_bibtex_types > 1;
@@ -94,7 +93,6 @@ sub can_be_deleted {
   return 1;
 }
 
-####################################################################################
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

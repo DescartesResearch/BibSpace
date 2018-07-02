@@ -63,7 +63,7 @@ our $selected_text_delimiter_l   = '';
 our $selected_text_delimiter_r   = '';
 our $selected_anchor_delimiter_l = '[';
 our $selected_anchor_delimiter_r = ']';
-############################################################################################################
+
 ## Controller function
 sub landing_types {
   my $self        = shift;
@@ -104,12 +104,19 @@ sub landing_types {
     # user wants to show only papers
     @entries_to_show = $self->get_papers_for_landing;
   }
+  elsif ($entry_type and $entry_type eq 'press') {
+    $hash_our_type_to_description{'press'} = 'Press Coverage';
+    @section_names = ('press');
+    @entries_to_show = $self->get_press_for_landing;
+  }
   else {
     # user wants to show everything = talks and papers
 
     # this needs to be added manually as talks are special
     $hash_our_type_to_description{'talk'} = "Talks";
     push @section_names, 'talk';
+    $hash_our_type_to_description{'press'} = "Press Coverage";
+    push @section_names, 'press';
     @entries_to_show = $self->get_entries_for_landing;
   }
 
@@ -140,6 +147,9 @@ sub landing_types {
     if ($section_name eq 'talk') {
       @entries_in_section = grep { $_->is_talk } @entries_to_show;
     }
+    elsif ($section_name eq 'press') {
+      @entries_in_section = grep { $_->is_press } @entries_to_show;
+    }
     else {
       @entries_in_section = grep {
               $_->is_paper
@@ -163,7 +173,7 @@ sub landing_types {
     $self->get_filtering_navbar_html()
   );
 }
-############################################################################################################
+
 ## Controller function
 sub landing_years {
   my $self   = shift;
@@ -214,7 +224,7 @@ sub landing_years {
   return $self->display_landing(\%hash_year_to_entries,
     \%hash_year_to_description, \@sections_sorted, $switchlink, $navbar_html);
 }
-############################################################################################################
+
 sub display_landing {
   my $self                         = shift;
   my $hash_our_type_to_entries     = shift;
@@ -257,13 +267,16 @@ sub display_landing {
     $display_tag_name =~ s/_/\ /g;
   }
 
-  my $title = "Publications and Talks ";
+  my $title = "Publications, Talks and Press Releases";
   $title = " Publications "
     if $self->param('entry_type')
     and $self->param('entry_type') eq 'paper';
   $title = " Talks "
     if $self->param('entry_type')
     and $self->param('entry_type') eq 'talk';
+  $title = " Press "
+    if $self->param('entry_type')
+    and $self->param('entry_type') eq 'press';
 
   $title .= " of team '" . $self->param('team') . "'" if $self->param('team');
   $title .= " of author '" . $self->param('author') . "'"
@@ -304,9 +317,8 @@ sub display_landing {
 
   # $self->render( template => 'publications/landing_obj' );
 }
-############################################################################################################
+
 ####################################### HELPER functions for this controller ###############################
-############################################################################################################
 
 sub get_switchlink_html {
   my $self    = shift;
@@ -351,9 +363,7 @@ sub get_switchlink_html {
   $str .= '</div>';
   return $str;
 }
-############################################################################################################
-############################################################################################################
-############################################################################################################
+
 sub get_filtering_navbar_html {
   my $self = shift;
 
@@ -379,7 +389,7 @@ sub get_filtering_navbar_html {
   $str .= '</div>';
   return $str;
 }
-############################################################################################################
+
 sub get_navbar_kinds_html {
   my $self = shift;
 
@@ -392,7 +402,7 @@ sub get_navbar_kinds_html {
   $str .= '<div>';
   $str .= 'Kind: ';
 
-  foreach my $key (qw(Paper Talk)) {
+  foreach my $key (qw(Paper Talk Press)) {
 
     my $url;
     if ($key eq 'Talk') {
@@ -429,7 +439,7 @@ sub get_navbar_kinds_html {
   $str .= '</div>';
   return $str;
 }
-############################################################################################################
+
 sub get_navbar_types_html {
   my $self = shift;
 
@@ -507,7 +517,7 @@ sub get_navbar_types_html {
   $str .= '</div>';
   return $str;
 }
-############################################################################################################
+
 sub get_navbar_years_html {
   my $self = shift;
 
@@ -580,7 +590,7 @@ sub get_navbar_years_html {
   $str .= '</div>';
   return $str;
 }
-############################################################################################################
+
 sub num_pubs_filtering {
   my $self             = shift;
   my $curr_bibtex_type = shift;
@@ -598,9 +608,7 @@ sub num_pubs_filtering {
     }
   );
 }
-############################################################################################################
-############################################################################################################
-############################################################################################################
+
 sub get_papers_for_landing {
   my $self = shift;
   return Fget_publications_main_hashed_args(
@@ -614,7 +622,7 @@ sub get_papers_for_landing {
     }
   );
 }
-############################################################################################################
+
 sub get_talks_for_landing {
   my $self = shift;
   return Fget_publications_main_hashed_args(
@@ -628,7 +636,19 @@ sub get_talks_for_landing {
     }
   );
 }
-############################################################################################################
+
+sub get_press_for_landing {
+  my $self = shift;
+  return Fget_publications_main_hashed_args(
+    $self,
+    {
+      entry_type => 'press',
+      visible    => 0,
+      hidden     => 0
+    }
+  )
+}
+
 sub get_entries_for_landing {
   my $self = shift;
   return Fget_publications_main_hashed_args(
@@ -641,5 +661,5 @@ sub get_entries_for_landing {
     }
   );
 }
-############################################################################################################
+
 1;
