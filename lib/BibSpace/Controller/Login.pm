@@ -320,8 +320,8 @@ sub store_password {
   if ($pass1 eq $pass2 and check_password_policy($pass1)) {
 
     my $salt = salt();
-    my $hash = encrypt_password($pass1, $salt);
-    $user->pass($pass1);
+    my $password_hash = encrypt_password($pass1, $salt);
+    $user->pass($password_hash);
     $user->pass2($salt);
     $user->forgot_token("");
     $self->flash(
