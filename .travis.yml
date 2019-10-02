@@ -1,46 +1,46 @@
+---
 language: perl
 perl:
-- '5.22'
+  - '5.22'
+  - '5.28'
 dist: trusty
 sudo: required
 services:
-- mysql
+  - mysql
 addons:
   apt:
     packages:
-    - ocaml
-    - libbtparse-dev
-    - libdbd-mysql-perl
-    - tree
+      - ocaml
+      - libbtparse-dev
+      - libdbd-mysql-perl
+      - tree
 git:
   depth: 3
 before_install:
-- sudo apt-get install -y texlive-base bibtex2html
-- git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
-- source ~/travis-perl-helpers/init
-- build-perl
-- perl -V
-- pwd
-- tree
-- export AUTOMATED_TESTING=1 AUTHOR_TESTING=1 HARNESS_OPTIONS=j1:c HARNESS_TIMER=0
+  - sudo apt-get install -y texlive-base bibtex2html
+  - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
+  - source ~/travis-perl-helpers/init
+  - build-perl
+  - perl -V
+  - export AUTOMATED_TESTING=1 AUTHOR_TESTING=1 HARNESS_OPTIONS=j1:c HARNESS_TIMER=0
+install:
+  - cpanm --installdeps --notest --verbose .
 before_script:
-- mysql --version
-- mysql -u root -e "SELECT VERSION();"
-- mysql -u root -e 'create database IF NOT EXISTS bibspace;'
-- mysql -u root -e "CREATE USER 'bibspace_user'@'localhost' IDENTIFIED BY 'passw00rd';"
-- mysql -u root -e "GRANT ALL PRIVILEGES ON bibspace.* TO 'bibspace_user'@'localhost';"
-- mysql -u root -e "FLUSH PRIVILEGES;"
-- mojo version
-- coverage-setup
+  - mysql --version
+  - mysql -u root -e "SELECT VERSION();"
+  - mysql -u root -e 'create database IF NOT EXISTS bibspace;'
+  - mysql -u root -e "CREATE USER 'bibspace_user'@'localhost' IDENTIFIED BY 'passw00rd';"
+  - mysql -u root -e "GRANT ALL PRIVILEGES ON bibspace.* TO 'bibspace_user'@'localhost';"
+  - mysql -u root -e "FLUSH PRIVILEGES;"
+  - mojo version
+  - coverage-setup
 notifications:
-  # slack:
-  #   secure: hwihdXrKIOilNPyIunNh5yqBwtgwj4SnheF8DlsmQI2TqpcyFWgjvspnvquiV7+OEBb5mFUSZeEUj5cgIgJ3VaBFIbcij0nq3TTHAvSmx+oTboAxUkg62zdPaaFV+iK9BpCNm6eGsjE1Wfp6LXzBHOZetCXJ1IgQ02mOknkW2ysztNhF4G/MMUXvDe5ApgTHshGYvkaD+StHcLt2c6Quy4DUkKeU6Djun6Dyp3foSBibBRsQK9q0yXo5ooYkoVllEaSvu94FpxBjsF+lBQJveM2Wc090EgM1An/Oc/ptMVvMmSE0mmM8RR9vM5dUZwmZHd/kECo1cvGQG1nVJZ9qWnrCeWcnJS7M9FkFucEBjFJTzh1FL3tgYKnXkS04uQLaj84byQr7f+l4l8ExsJPUriQia9829+OeiRblOdB3mEEMgHleMhE0trfre7iz5Beob5sPwTq9z7ywrRVGX8vKeDXPEmwDi+5gdYXRw3QwNP7sWAePOdpZPzUBc5fUYZh8kJB22b8zoF1T81gxME0MQOc4nCgSCETtLWih3R8sngooAXXo9kYM3zb38ijoLpPwlOmE0BR9rvcSz8BBp1bVhWZ4k4ploe5uTtb+Mg31Amj6d5I5z9/KwYJQ6Mcy3y8Ijozm7+FpDLfjz70ZjAYguurmHFZsDQJQp4fJUcOFabc=
   email:
     on_success: always
     on_failure: always
 script:
-- export BIBSPACE_CONFIG=lib/BibSpace/files/config/default.conf
-- export BIBSPACE_USE_DUMP=1
-- PERL5OPT=-MDevel::Cover=-coverage,statement,branch,condition,path,subroutine prove -lr
+  - export BIBSPACE_CONFIG=lib/BibSpace/files/config/default.conf
+  - export BIBSPACE_USE_DUMP=1
+  - PERL5OPT=-MDevel::Cover=-coverage,statement,branch,condition,path,subroutine prove -lr
 after_success:
-- cover -report coveralls
+  - cover -report coveralls

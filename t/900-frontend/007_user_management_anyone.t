@@ -30,7 +30,7 @@ subtest 'Requesting password reset' => sub {
   $t_anyone->post_ok(
     '/forgot/gen' => {Accept => '*/*'},
     form          => {user   => 'pub_admin'}
-    )->status_isnt(404)->status_isnt(500)
+  )->status_isnt(404)->status_isnt(500)
     ->content_like(qr/Email with password reset instructions has been sent/i,
     "Filling forgot with login");
 
@@ -38,7 +38,7 @@ subtest 'Requesting password reset' => sub {
   $t_anyone->post_ok(
     '/forgot/gen' => {Accept => '*/*'},
     form          => {user   => '', email => 'pub_admin@example.com'}
-    )->status_isnt(404)->status_isnt(500)
+  )->status_isnt(404)->status_isnt(500)
     ->content_like(qr/Email with password reset instructions has been sent/i,
     "Filling forgot with email");
 
@@ -63,7 +63,7 @@ subtest 'Setting new password' => sub {
   );
 
   my $user = $t_anyone->app->repo->users_find(sub { $_->login eq 'pub_admin' });
-  my $token2 = $user->forgot_token;
+  my $token2 = $user->get_forgot_pass_token;
 
   ok($token2, "Checking token exists");
   is(length($token2), 32, "Checking token length");
@@ -97,7 +97,7 @@ subtest 'Setting new password' => sub {
 
 note "============ Registration anyone ============";
 
-$t_anyone->get_ok("/noregister")->status_is(200)
+$t_anyone->get_ok($self->url_for('registration_disabled'))->status_is(200)
   ->content_like(qr/Registration is disabled/i);
 
 subtest 'User management: public registration' => sub {
@@ -118,7 +118,7 @@ subtest 'User management: public registration' => sub {
         password1 => 'asdf',
         password2 => 'qwerty'
       }
-      )->status_isnt(404)->status_isnt(500)
+    )->status_isnt(404)->status_isnt(500)
       ->content_like(qr/Passwords don't match!/i,
       "Trying to register with non-matching passwords");
 
@@ -130,10 +130,10 @@ subtest 'User management: public registration' => sub {
         password1 => 'a',
         password2 => 'a'
       }
-      )->status_isnt(404)->status_isnt(500)->content_like(
+    )->status_isnt(404)->status_isnt(500)->content_like(
       qr/Password is too short, use minimum 4 symbols/i,
       "Trying to register with too short password"
-      );
+    );
 
     $t_anyone->post_ok(
       '/register' => form => {
@@ -143,7 +143,7 @@ subtest 'User management: public registration' => sub {
         password1 => 'a1234',
         password2 => 'a1234'
       }
-      )->status_isnt(404)->status_isnt(500)->content_like(qr/Login is missing/i,
+    )->status_isnt(404)->status_isnt(500)->content_like(qr/Login is missing/i,
       "Trying to register with missing login and email");
 
     $t_anyone->post_ok(
@@ -154,7 +154,7 @@ subtest 'User management: public registration' => sub {
         password1 => 'a1234',
         password2 => 'a1234'
       }
-      )->status_isnt(404)->status_isnt(500)->content_like(qr/Email is missing/i,
+    )->status_isnt(404)->status_isnt(500)->content_like(qr/Email is missing/i,
       "Trying to register with missing login and email");
 
     $t_anyone->post_ok(
@@ -165,7 +165,7 @@ subtest 'User management: public registration' => sub {
         password1 => 'qwerty',
         password2 => 'qwerty'
       }
-      )->status_isnt(404)->status_isnt(500)
+    )->status_isnt(404)->status_isnt(500)
       ->content_like(
       qr/User created successfully! You may now login using login: $token/i,
       "Trying to register with valid data");
@@ -178,7 +178,7 @@ subtest 'User management: public registration' => sub {
         password1 => 'qwerty',
         password2 => 'qwerty'
       }
-      )->status_isnt(404)->status_isnt(500)
+    )->status_isnt(404)->status_isnt(500)
       ->content_like(qr/This login is already taken/i,
       "Trying to register pub_admin");
   }

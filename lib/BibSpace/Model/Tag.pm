@@ -1,31 +1,21 @@
 package Tag;
 
-use Data::Dumper;
 use utf8;
-use Text::BibTeX;    # parsing bib files
+use Text::BibTeX;
 use v5.16;
-
 use List::MoreUtils qw(any uniq first_index);
-
 use Moose;
+use MooseX::Storage;    # required for traits => DoNotSerialize
+with Storage;
 require BibSpace::Model::IEntity;
 require BibSpace::Model::ILabeled;
 with 'IEntity', 'ILabeled';
 
-use MooseX::Storage;
-with Storage('format' => 'JSON', 'io' => 'File');
-
-has 'name'      => (is => 'rw', isa => 'Str');
-has 'type'      => (is => 'rw', isa => 'Int', default => 1);
-has 'permalink' => (is => 'rw', isa => 'Maybe[Str]');
+use BibSpace::Model::SerializableBase::TagSerializableBase;
+extends 'TagSerializableBase';
 
 has 'tagtype' =>
   (is => 'rw', isa => 'Maybe[TagType]', traits => ['DoNotSerialize'],);
-
-sub toString {
-  my $self = shift;
-  $self->freeze;
-}
 
 sub equals {
   my $self = shift;
@@ -43,9 +33,21 @@ sub get_authors {
   return uniq @authors;
 }
 
-sub get_entries {
+sub get_labelings {
   my $self = shift;
-  return map { $_->entry } $self->labelings_all;
+  return $self->repo->labelings_filter(sub { $_->tag_id == $self->id });
+}
+
+sub get_entries {
+  my $self      = shift;
+  my @entry_ids = map { $_->entry_id } $self->get_labelings;
+
+  return $self->repo->entries_filter(
+    sub {
+      my $e = $_;
+      return grep { $_ eq $e->id } @entry_ids;
+    }
+  );
 }
 
 no Moose;

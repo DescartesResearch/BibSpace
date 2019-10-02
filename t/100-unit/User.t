@@ -30,8 +30,6 @@ foreach my $user (@all_users) {
 
   note "============ Testing User ID " . $user->id . ".";
 
-  ok($user->toString, "toString");
-
   if (!$user->equals($me)) {
     ok($user->make_admin,   "make_admin");
     ok($user->make_manager, "make_manager");
@@ -39,6 +37,13 @@ foreach my $user (@all_users) {
     ok($user->make_manager, "make_manager");
     ok($user->make_admin,   "make_admin");
     ok($user->make_user,    "make_user");
+    is($user->get_forgot_pass_token, undef, "get forgot_token should be undef");
+    $user->set_forgot_pass_token("aabbcc");
+    is($user->get_forgot_pass_token,
+      "aabbcc", "get forgot_token should be aabbcc");
+    $user->reset_forgot_token;
+    is($user->get_forgot_pass_token,
+      undef, "get forgot_token should be undef again");
   }
 
   $limit_num_tests--;

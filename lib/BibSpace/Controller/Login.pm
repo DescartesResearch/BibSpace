@@ -100,7 +100,7 @@ sub promote_to_rank {
   my $rank = shift;
 
   my $profile_id = $self->param('id');
-  my $user_obj = $self->app->repo->users_find(sub { $_->id == $profile_id });
+  my $user_obj   = $self->app->repo->users_find(sub { $_->id == $profile_id });
 
   my $me
     = $self->app->repo->users_find(sub { $_->login eq $self->session('user') });
@@ -200,11 +200,6 @@ sub profile {
   $self->render(template => 'login/profile');
 }
 
-sub index {
-  my $self = shift;
-  $self->render(template => 'login/index');
-}
-
 sub forgot {
   my $self = shift;
   $self->app->logger->info("Forgot password form opened");
@@ -238,49 +233,46 @@ sub post_gen_forgot_token {
       msg_type => 'warning',
       msg      => "User '$login' or email '$email' does not exist. Try again."
     );
-    $self->redirect_to('forgot');
+    $self->redirect_to($self->url_for('forgot_password'));
     return;
   }
-  else {
-    # store token in the user object
-    $user->forgot_token(generate_token);
 
-    my $email_content = $self->render_to_string('email_forgot_password',
-      token => $user->forgot_token);
-    try {
-      my %email_config = (
-        mailgun_domain => $self->app->config->{mailgun_domain},
-        mailgun_key    => $self->app->config->{mailgun_key},
-        from           => $self->app->config->{mailgun_from},
-        to             => $user->email,
-        content        => $email_content,
-        subject        => 'BibSpace password reset request'
-      );
-      send_email(\%email_config);
-    }
-    catch {
-      $self->app->logger->warn(
-        "Could not sent Email with Mailgun. This is okay for test, but not for production. Error: $_ ."
-      );
-    };
+  # store token in the user object
+  $user->set_forgot_pass_token(generate_token);
+  $self->app->repo->users_update($user);
 
-    $self->app->logger->info("Forgot-password-token '"
-        . $user->forgot_token
-        . "' sent to '"
-        . $user->email
-        . "'.");
-
-    $self->flash(
-      msg_type => 'info',
-      msg =>
-        "Email with password reset instructions has been sent. Expect an email from "
-        . $self->app->config->{mailgun_from}
+  my $email_content = $self->render_to_string('email_forgot_password',
+    token => $user->get_forgot_pass_token);
+  try {
+    my %email_config = (
+      mailgun_domain => $self->app->config->{mailgun_domain},
+      mailgun_key    => $self->app->config->{mailgun_key},
+      from           => $self->app->config->{mailgun_from},
+      to             => $user->email,
+      content        => $email_content,
+      subject        => 'BibSpace password reset request'
     );
-    $self->redirect_to('/');
-
+    send_email(\%email_config);
   }
+  catch {
+    $self->app->logger->warn("Could not sent Email with Mailgun. Error: $_ .");
+  };
 
-  $self->redirect_to('forgot');
+  $self->app->logger->info("Forgot-password-token '"
+      . $user->get_forgot_pass_token
+      . "' sent to '"
+      . $user->email
+      . "'.");
+
+  $self->flash(
+    msg_type => 'info',
+    msg =>
+      "Email with password reset instructions has been sent. Expect an email from "
+      . $self->app->config->{mailgun_from}
+  );
+  $self->redirect_to('start');
+  return;
+
 }
 
 sub token_clicked {
@@ -302,7 +294,11 @@ sub store_password {
   my $user;
   if ($token) {
     $user = $self->app->repo->users_find(
-      sub { defined $_->forgot_token and $_->forgot_token eq $token });
+      sub {
+        defined $_->get_forgot_pass_token
+          and $_->get_forgot_pass_token eq $token;
+      }
+    );
   }
 
   if (!$user) {
@@ -319,11 +315,12 @@ sub store_password {
 
   if ($pass1 eq $pass2 and check_password_policy($pass1)) {
 
-    my $salt = salt();
+    my $salt          = salt();
     my $password_hash = encrypt_password($pass1, $salt);
     $user->pass($password_hash);
     $user->pass2($salt);
-    $user->forgot_token("");
+    $user->reset_forgot_token;
+    $self->app->repo->users_update($user);
     $self->flash(
       msg_type => 'success',
       msg =>
@@ -377,7 +374,7 @@ sub login {
     $user->record_logging_in;
 
     $self->app->logger->info("Login as '$input_login' success.");
-    $self->redirect_to('/');
+    $self->redirect_to('start');
     return;
   }
   else {
@@ -460,7 +457,7 @@ sub register {
     return;
   }
   else {
-    $self->redirect_to('/noregister');
+    $self->redirect_to('registration_disabled');
   }
 }
 
@@ -474,13 +471,14 @@ sub post_do_register {
   my $password2 = $self->param('password2');
 
   if (!$self->can_register) {
-    $self->redirect_to('/noregister');
+    $self->redirect_to('registration_disabled');
     return;
   }
 
   $self->app->logger->info(
     "Received registration data. Login: '$login', email: '$email'.");
 
+  my $failure_reason = '';
   try {
     # this throws on failure
     validate_registration_data($login, $email, $password1, $password2);
@@ -503,21 +501,23 @@ sub post_do_register {
       msg_type => 'success',
       msg => "User created successfully! You may now login using login: $login."
     );
-    $self->redirect_to('/');
+    $self->redirect_to('start');
   }
   catch {
-    my $failure_reason = $_;
+    $failure_reason = $_;
     $self->app->logger->warn($failure_reason);
-    $self->flash(msg_type => 'danger', msg => $failure_reason);
-    $self->stash(
-      name      => $name,
-      email     => $email,
-      login     => $login,
-      password1 => $password1,
-      password2 => $password2
-    );
-    $self->redirect_to('register');
   };
+  $self->flash(msg_type => 'danger', msg => "$failure_reason");
+  $self->stash(
+    name      => $name,
+    email     => $email,
+    login     => $login,
+    password1 => $password1,
+    password2 => $password2
+  );
+
+  $self->redirect_to('register');
+  return;
 }
 
 1;

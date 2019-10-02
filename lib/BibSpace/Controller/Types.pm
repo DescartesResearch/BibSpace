@@ -13,9 +13,6 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Base 'Mojolicious::Plugin::Config';
 use Mojo::Log;
 
-#  ALTER TABLE OurType_to_Type ADD COLUMN description TEXT DEFAULT NULL;
-#  ALTER TABLE OurType_to_Type ADD COLUMN landing INTEGER DEFAULT 0;
-
 sub all_our {
   my $self = shift;
 
@@ -36,8 +33,15 @@ sub post_add_type {
   my $new_type = $self->param('new_type');
 
   my $type = $self->app->entityFactory->new_Type(our_type => $new_type);
-  $self->app->repo->types_save($type);
 
+  # Databse requires that each type must have at least one bibtex_type
+  $type->bibtexTypes_add('dummy');
+  $self->app->repo->types_save($type);
+  $self->flash(
+    msg_type => 'warning',
+    message =>
+      "Type $new_type has been added and mapped onto dummy bibtex type."
+  );
   $self->redirect_to($self->url_for('all_types'));
 }
 
@@ -45,7 +49,7 @@ sub manage {
   my $self      = shift;
   my $type_name = $self->param('name');
 
-  my @all = $self->app->repo->types_all;
+  my @all  = $self->app->repo->types_all;
   my $type = $self->app->repo->types_find(sub { $_->our_type eq $type_name });
 
   my @all_our_types         = uniq map { $_->our_type } @all;
@@ -53,7 +57,7 @@ sub manage {
   my @assigned_bibtex_types = $type->bibtexTypes_all;
 
   # # cannot use objects as keysdue to stringification!
-  my %types_hash = map { $_ => 1 } @assigned_bibtex_types;
+  my %types_hash        = map  { $_ => 1 } @assigned_bibtex_types;
   my @unassigned_btypes = grep { not $types_hash{$_} } @all_bibtex_types;
 
   $self->stash(
@@ -94,7 +98,7 @@ sub post_store_description {
     $type_obj->description($description);
     $self->app->repo->types_update($type_obj);
   }
-  $self->redirect_to($self->get_referrer);
+  $self->redirect_to($self->url_for('edit_type', name => $type_name));
 }
 
 sub delete_type {
@@ -118,7 +122,7 @@ sub delete_type {
         "$type_name cannot be deleted. Possible reasons: mappings exist or it is native bibtex type."
     );
   }
-  $self->redirect_to($self->get_referrer);
+  $self->redirect_to($self->url_for('all_types'));
 }
 
 sub map_types {
@@ -158,7 +162,7 @@ sub map_types {
       msg_type => 'danger'
     );
   }
-  $self->redirect_to($self->get_referrer);
+  $self->redirect_to($self->url_for('edit_type', name => $o_type));
 }
 
 sub unmap_types {
@@ -197,8 +201,7 @@ sub unmap_types {
       msg_type => 'danger'
     );
   }
-  $self->redirect_to($self->get_referrer);
-
+  $self->redirect_to($self->url_for('edit_type', name => $o_type));
 }
 
 1;

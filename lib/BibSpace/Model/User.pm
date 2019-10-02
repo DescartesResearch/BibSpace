@@ -1,49 +1,33 @@
 package User;
 
 use Try::Tiny;
-use Data::Dumper;
 use utf8;
 use v5.16;
 use List::MoreUtils qw(any uniq);
-
 use BibSpace::Functions::Core qw(check_password);
 use BibSpace::Model::IEntity;
-
 use Moose;
-
 use Moose::Util::TypeConstraints;
-
 use MooseX::ClassAttribute;
 with 'IEntity';
-
-use MooseX::Storage;
-with Storage('format' => 'JSON', 'io' => 'File');
-
+use BibSpace::Model::SerializableBase::UserSerializableBase;
+extends 'UserSerializableBase';
 use DateTime::Format::Strptime;
 use DateTime;
 my $dtPattern = DateTime::Format::Strptime->new(pattern => '%Y-%m-%d %H:%M:%S');
 
-class_has 'admin_rank'   => (is => 'ro', default => 2);
-class_has 'manager_rank' => (is => 'ro', default => 1);
-class_has 'user_rank'    => (is => 'ro', default => 0);
+sub get_forgot_pass_token {
+  shift->pass3;
+}
 
-has 'login'     => (is => 'rw', isa => 'Str', required => 1);
-has 'real_name' => (is => 'rw', isa => 'Str', default  => "unnamed");
-has 'email'     => (is => 'rw', isa => 'Str', required => 1);
-has 'rank' => (is => 'rw', default => User->user_rank);
+sub set_forgot_pass_token {
+  shift->pass3(shift);
+}
 
-# pass = user password
-has 'pass' => (is => 'rw', isa => 'Str');
-
-# pass2 = salt
-has 'pass2' => (is => 'rw', isa => 'Str');
-has 'pass3' => (is => 'rw', isa => 'Maybe[Str]');
-
-# TODO: forgot_token is not a DB field!
-has 'forgot_token' => (is => 'rw', isa     => 'Maybe[Str]');
-has 'master_id'    => (is => 'rw', default => 0);
-has 'tennant_id'   => (is => 'rw', default => 0);
-
+sub reset_forgot_token {
+  my ($self) = @_;
+  $self->pass3(undef);
+}
 has 'last_login' => (
   is      => 'rw',
   isa     => 'DateTime',
@@ -75,16 +59,6 @@ sub get_registration_time {
   my $self = shift;
   $self->registration_time->set_time_zone($self->preferences->local_time_zone)
     ->strftime($self->preferences->output_time_format);
-}
-
-sub toString {
-  my $self = shift;
-  my $str  = "User >> login: ";
-  $str .= sprintf "'%32s',", $self->login;
-  $str .= " rank: '" . $self->rank . "'";
-  $str .= " email: ";
-  $str .= sprintf "'%32s'.", $self->email;
-  return $str;
 }
 
 sub equals {
@@ -141,8 +115,8 @@ sub record_logging_in {
   my $self = shift;
   $self->last_login(
     DateTime->now->set_time_zone($self->preferences->local_time_zone));
-
 }
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

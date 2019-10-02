@@ -5,7 +5,7 @@ package BibStyle::LocalBibStyle v0.0.4;
 =head1 NAME
 
 Text::BibTeX::BibStyle - Format Text::BibTeX::Entry items using .bst
-This is a local copy of Text::BibTeX::BibStyle (v 0.0.3) from CPAN. 
+This is a local copy of Text::BibTeX::BibStyle (v 0.0.3) from CPAN.
 This version will be pushed to CPAN once tests are ready
 
 =cut
@@ -752,7 +752,7 @@ indirectly through the C<read_bibstyle> method.
         entry_str => {'sort.key$' => undef},
         field     => {crossref    => undef},
         function => {map(($_ => "'$_"), keys %BuiltIn)},
-        integer => {'entry.max$' => 100, 'global.max$' => 1000,},
+        integer  => {'entry.max$' => 100, 'global.max$' => 1000,},
       };
       $self->{warnings} = [];
     }
@@ -857,7 +857,7 @@ under the same terms as Perl itself.
 
         $Arg_num = $first_arg ? 1 : $Arg_num + 1;
         $Check_type_warnings = 0 if $first_arg;
-        $_ = $arg;
+        $_                   = $arg;
         my $type
           = (!defined $_ || /^\"/ ? 's'
           : ref($_)   ? 'x'
@@ -1262,7 +1262,26 @@ under the same terms as Perl itself.
     # We can use builtin eval for these functions
     my $arg1 = $self->_pop(i => $token, 1);
     my $arg2 = $self->_pop(i => $token);
-    $self->_push(_check_type_warnings() ? 0 : eval "0+($arg2 $token $arg1)");
+
+    # Original code
+    # $self->_push(_check_type_warnings() ? 0 : eval "0+($arg2 $token $arg1)");
+    #
+    # Replace eval with safe code due to warnings:
+    # Insecure dependency in open while running with -t switch
+    my $result = 0;
+    if ($token =~ '[*<>+-]') {
+      $result = 1 if $arg2 > $arg1 and $token eq '>';
+      $result = 1 if $arg2 < $arg1 and $token eq '<';
+
+      $result = 0 + $arg2 + $arg1 if $token eq '+';
+      $result = 0 + $arg2 - $arg1 if $token eq '-';
+      $result = 0 + $arg2 * $arg1 if $token eq '*';
+
+      $self->_push(_check_type_warnings() ? 0 : $result);
+    }
+    else {
+      $self->_warning("UNSUPPORTED TOKEN $token");
+    }
   }
 
   sub _function_assign {
@@ -1273,7 +1292,7 @@ under the same terms as Perl itself.
     my ($type) = grep(exists $self->{symbols}{$_}{$sym},
       qw(entry_int entry_str integer string));
     my $val_type = !$have_sym ? 'si' : $type =~ /str/ ? 's' : 'i';
-    my $val = $self->_pop($val_type => $token);
+    my $val     = $self->_pop($val_type => $token);
     my $bad_arg = _check_type_warnings();
     return if $bad_arg;
     if (!$type) {
@@ -1324,7 +1343,7 @@ under the same terms as Perl itself.
   sub _function_chr_to_int {
     my ($self, $token) = @_;
 
-    my $arg1 = $self->_pop(s => $token, 1);
+    my $arg1    = $self->_pop(s => $token, 1);
     my $bad_arg = _check_type_warnings();
     $self->_warning("Argument 1 to '$token' must be a single character")
       if !$bad_arg && $arg1 !~ /^\"(.)\"$/;
@@ -1418,7 +1437,7 @@ under the same terms as Perl itself.
         my @out_names;
         foreach (@$name) {
           my $name = _unprotect($_);
-          my $tie = @out_names && $need_tie && $may_tie ? '~' : ' ';
+          my $tie  = @out_names && $need_tie && $may_tie ? '~' : ' ';
           if ($long) {
             push @out_names, $tie if @out_names;
             push @out_names, $name;
@@ -1636,7 +1655,7 @@ under the same terms as Perl itself.
 
     # Remove braces around only alphanum
     1 while $arg =~ s/\{([a-z0-9 ]+)\}/$1/gi;
-    $arg =~ s/\{[^{}]*\}//g;    # Remove all other braces
+    $arg =~ s/\{[^{}]*\}//g;      # Remove all other braces
     $arg =~ tr/a-zA-Z0-9 ~//cd;
     $arg =~ tr/~/ /;
     $arg =~ s/\s+/ /g;
@@ -1872,7 +1891,7 @@ under the same terms as Perl itself.
       {
         my ($symbol, $letter) = ($3 || $4, $5);
         $width += $Char_widths{ord $letter} || 0 if defined $letter;
-        $width += $Char_widths{$symbol} || 0
+        $width += $Char_widths{$symbol}     || 0
           if defined $symbol && $symbol =~ s/^\\?//;
       }
       $self->_push($width);
@@ -1906,7 +1925,7 @@ sub _function_warning {
 sub _function_while {
   my ($self, $token) = @_;
 
-  my $do = $self->_pop(qx => $token, 1);
+  my $do   = $self->_pop(qx => $token, 1);
   my $cont = $self->_pop(qx => $token);
   return if _check_type_warnings();
   my $val;
@@ -2286,7 +2305,7 @@ sub _warning : method {
   my ($self, $warning, $no_lineno) = @_;
 
   my $lineno = $no_lineno ? '' : "$self->{lineno}: ";
-  my $warn = "$lineno$warning";
+  my $warn   = "$lineno$warning";
   push @{$self->{warnings}}, "$warn\n";
   carp $warn;
   return 1;

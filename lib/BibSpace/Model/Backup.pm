@@ -20,7 +20,7 @@ class_has 'date_format_pattern' => (is => 'ro', default => '%Y-%m-%d-%H-%M-%S');
 has 'uuid' =>
   (is => 'rw', isa => 'Str', default => sub { create_uuid_as_string(UUID_V4) });
 has 'name' => (is => 'rw', isa => 'Str', default => 'normal');
-has 'type' => (is => 'rw', isa => 'Str', default => 'storable');
+has 'type' => (is => 'rw', isa => 'Str', default => 'json');
 has 'filename'     => (is => 'rw', isa => 'Maybe[Str]');
 has 'dir'          => (is => 'rw', isa => 'Maybe[Str]');
 has 'allow_delete' => (is => 'rw', isa => 'Bool', default => 1);
@@ -38,6 +38,10 @@ has 'date' => (
 
 sub id {
   shift->uuid;
+}
+
+sub sha {
+  return substr(shift->uuid, 0, 7);
 }
 
 sub get_size {
@@ -98,9 +102,9 @@ sub get_age {
 sub create {
   my $self = shift;
   my $name = shift;
-  my $type = shift // 'storable';
+  my $type = shift // 'json';
 
-  my $ext = '.dat';
+  my $ext = '.json';
   $ext = '.sql' if $type eq 'mysql';
 
   my $uuid = create_uuid_as_string(UUID_V4);
@@ -137,8 +141,8 @@ sub parse {
   my $type   = shift @tokens;
   my $date   = shift @tokens;
 
-  $date =~ s/\.dat//g;
   $date =~ s/\.sql//g;
+  $date =~ s/\.json//g;
 
 # my $now = DateTime->now(formatter => DateTime::Format::Strptime->new( pattern => Backup->date_format_pattern ));
   my $now
@@ -155,11 +159,6 @@ sub parse {
     type     => $type,
     date     => $now_str
   );
-}
-
-sub toString {
-  my $self = shift;
-  return "Backup filename '" . $self->filename . "'";
 }
 
 sub equals {

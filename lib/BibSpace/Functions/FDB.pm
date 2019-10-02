@@ -28,35 +28,26 @@ sub db_connect {
 
   my $conn = undef;
   my %attr = (RaiseError => 1, AutoCommit => 1, mysql_auto_reconnect => 1);
+  my $connect_string = "DBI:mysql:database=$db_database;host=$db_host";
   try {
-# $conn = Apache::DBI->connect_on_init("DBI:mysql:database=$db_database;host=$db_host", $db_user, $db_pass, \%attr );
     print
       "(Re)connecting to: 'DBI:mysql:database=$db_database;host=$db_host'\n";
-    $conn = DBI->connect_cached("DBI:mysql:database=$db_database;host=$db_host",
-      $db_user, $db_pass, \%attr);
+    $conn = DBI->connect($connect_string, $db_user, $db_pass, \%attr);
   }
   catch {
     warn "db_connect: could not connect to the database: $_";
     warn "Trying to recreate database...";
 
-# THIS BLOCK MAY CAUSE PROBLEMS !!! If MySQL dies during operation, make sure to check again without this block.
     try {
       my $drh = DBI->install_driver("mysql");
       $drh->func('createdb', $db_database, $db_host, $db_user, $db_pass,
         'admin');
     }
     catch {
-      die "FATAL: DB Recreation falied: $_";
+      die "FATAL: DB Recreation failed: $_";
     };
-
-    # we catch and throw...
-
   };
-  my $dbh = $conn;
-
-  return if !$dbh;
-  create_main_db($dbh);
-  return $dbh;
+  return $conn;
 }
 
 sub reset_db_data {
@@ -80,40 +71,6 @@ sub reset_db_data {
   return $dbh;
 }
 
-sub purge_and_create_db {
-  my ($dbh, $db_host, $db_user, $db_database, $db_pass) = @_;
-
-  # my $drh = DBI->install_driver("mysql");
-
-# say "!!! DROPPING DATABASE '$db_database'.";
-# try {
-#   my $rc = $drh->func( 'dropdb', $db_database, $db_host, $db_user, $db_pass, 'admin' );
-# }
-# catch {
-#   warn $_;
-# };
-
-# say "!!! CREATING DATABASE '$db_database'.";
-# try {
-#   my $rc = $drh->func( 'createdb', $db_database, $db_host, $db_user, $db_pass, 'admin' );
-# }
-# catch {
-#   warn $_;
-# };
-
-  # say "Restarting connection to '$db_database'.";
-  # try {
-  #   $dbh = db_connect( $db_host, $db_user, $db_database, $db_pass );
-  #   create_main_db($dbh);
-
-  # }
-  # catch {
-  #   warn $_;
-  # };
-
-  return $dbh;
-}
-
 sub create_main_db {
   my $dbh = shift;
 
@@ -121,8 +78,8 @@ sub create_main_db {
 
   $dbh->do(
     "CREATE TABLE IF NOT EXISTS `Author`(
-         id INTEGER(5) PRIMARY KEY AUTO_INCREMENT, 
-         uid VARCHAR(250), 
+         id INTEGER(5) PRIMARY KEY AUTO_INCREMENT,
+         uid VARCHAR(250),
          display INTEGER(1) DEFAULT 0,
          master TEXT(250) DEFAULT NULL,
          master_id INTEGER(8),
@@ -140,8 +97,8 @@ sub create_main_db {
   );
   $dbh->do(
     "CREATE TABLE IF NOT EXISTS `Author_to_Team`(
-         author_id INTEGER, 
-         team_id INTEGER, 
+         author_id INTEGER,
+         team_id INTEGER,
          start INTEGER DEFAULT 0,
          stop INTEGER DEFAULT 0,
          FOREIGN KEY(author_id) REFERENCES Author(master_id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -183,9 +140,9 @@ sub create_main_db {
       "CREATE TABLE IF NOT EXISTS `Entry`(
           id INTEGER(8) PRIMARY KEY AUTO_INCREMENT,
           entry_type ENUM('paper', 'talk') NOT NULL,
-          bibtex_key VARCHAR(250), 
-          bibtex_type VARCHAR(50)DEFAULT NULL, 
-          bib TEXT, 
+          bibtex_key VARCHAR(250),
+          bibtex_type VARCHAR(50)DEFAULT NULL,
+          bib TEXT,
           html TEXT,
           html_bib TEXT,
           abstract TEXT,
@@ -207,9 +164,9 @@ sub create_main_db {
 
   $dbh->do(
     "CREATE TABLE IF NOT EXISTS `Entry_to_Author`(
-         entry_id INTEGER NOT NULL, 
-         author_id INTEGER NOT NULL, 
-         FOREIGN KEY(entry_id) REFERENCES Entry(id) ON UPDATE CASCADE ON DELETE CASCADE, 
+         entry_id INTEGER NOT NULL,
+         author_id INTEGER NOT NULL,
+         FOREIGN KEY(entry_id) REFERENCES Entry(id) ON UPDATE CASCADE ON DELETE CASCADE,
          FOREIGN KEY(author_id) REFERENCES Author(master_id) ON UPDATE CASCADE ON DELETE CASCADE,
          PRIMARY KEY (entry_id, author_id),
          KEY idx_e2a_entry (entry_id),
@@ -235,9 +192,9 @@ sub create_main_db {
   );
   $dbh->do(
     "CREATE TABLE IF NOT EXISTS `Entry_to_Tag`(
-         entry_id INTEGER(8) NOT NULL, 
-         tag_id INTEGER(8) NOT NULL, 
-         FOREIGN KEY(entry_id) REFERENCES Entry(id) ON UPDATE CASCADE ON DELETE CASCADE, 
+         entry_id INTEGER(8) NOT NULL,
+         tag_id INTEGER(8) NOT NULL,
+         FOREIGN KEY(entry_id) REFERENCES Entry(id) ON UPDATE CASCADE ON DELETE CASCADE,
          FOREIGN KEY(tag_id) REFERENCES Tag(id) ON UPDATE CASCADE ON DELETE CASCADE,
          PRIMARY KEY (entry_id, tag_id)
          )"
@@ -253,9 +210,9 @@ sub create_main_db {
   );
   $dbh->do(
     "CREATE TABLE IF NOT EXISTS `OurType_to_Type`(
-         bibtex_type VARCHAR(250), 
-         our_type VARCHAR(250), 
-         description TEXT DEFAULT NULL, 
+         bibtex_type VARCHAR(250),
+         our_type VARCHAR(250),
+         description TEXT DEFAULT NULL,
          landing INTEGER DEFAULT 0,
          PRIMARY KEY (bibtex_type, our_type)
          )"
@@ -264,12 +221,7 @@ sub create_main_db {
   # prepare_token_table_mysql($dbh);
   prepare_cron_table($dbh);
   prepare_user_table_mysql($dbh);
-
-# this causes desynchronisation between layers!!
-# mysql has some initial data, whereas smart doesnt (so id providers are unaware of the data as well)
-  populate_tables($dbh);
-
-  # $dbh->commit();
+  apply_migrations($dbh);
 }
 
 # sub prepare_token_table_mysql {
@@ -361,42 +313,17 @@ sub prepare_user_table_mysql {
   };
 }
 
-sub populate_tables {
+sub apply_migrations {
   my $dbh = shift;
   try {
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('incollection','inproceedings',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('incollection','bibtex-incollection',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('inproceedings','bibtex-inproceedings',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('inbook','book',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('mastersthesis','theses',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('phdthesis','theses',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('phdthesis','volumes',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('proceedings','volumes',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('article','article',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('book','book',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('inbook','inbook',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('incollection','incollection',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('inproceedings','inproceedings',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('manual','manual','Manuals',1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('mastersthesis','mastersthesis',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('misc','misc',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('phdthesis','phdthesis',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('proceedings','proceedings',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('techreport','techreport',NULL,1)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('unpublished','unpublished',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('book','volumes',NULL,0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('mastersthesis','supervised_theses','Supervised Theses',0)");
-# $dbh->do("INSERT IGNORE INTO OurType_to_Type VALUES('phdthesis','supervised_theses','Supervised Theses',0)");
-
-# $dbh->do("INSERT IGNORE INTO `TagType` VALUES ('Tag','keyword',1)");
-# $dbh->do("INSERT IGNORE INTO `TagType` VALUES ('Category','12 categories defined as in research agenda',2)");
-# $dbh->do("INSERT IGNORE INTO `TagType` VALUES ('Other','Reserved for other groupings of papers',3)");
+    say "Attempt to migrate table Author";
+    $dbh->do(
+      "ALTER TABLE `Author` DROP PRIMARY KEY, MODIFY id INTEGER(8) PRIMARY KEY AUTO_INCREMENT"
+    );
   }
   catch {
-    say "Data already exist. Doing nothing.";
+    say "Migration not necessary or failed: $_";
   };
-
-  # $dbh->commit();
 }
 
 1;

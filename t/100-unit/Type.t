@@ -12,10 +12,6 @@ TestManager->apply_fixture($self->app);
 my $repo      = $self->app->repo;
 my @all_types = $repo->types_all;
 
-# my $author = ($repo->authors_all)[0];
-# my $author2 = ($repo->authors_all)[1];
-# my $entry = ($repo->entries_all)[0];
-
 my $limit_num_tests = 20;
 
 note "============ Testing " . scalar(@all_types) . " Types ============";
@@ -23,9 +19,8 @@ note "============ Testing " . scalar(@all_types) . " Types ============";
 foreach my $type (@all_types) {
   last if $limit_num_tests < 0;
 
-  note "============ Testing Type ID " . $type->id . ".";
+  note "============ Testing Type ID " . $type->our_type . ".";
 
-  ok($type->toString,      "toString");
   ok($type->equals($type), "equals");
 
   if ($type->bibtexTypes_count == 1) {
@@ -36,13 +31,11 @@ foreach my $type (@all_types) {
     if ($type->get_first_bibtex_type eq $type->our_type) {
       ok(!$type->can_be_deleted,
             "allowed deletion of custom 1:1 mapping \n\t"
-          . $type->toString
           . "\t - should not allow to delete");
     }
     else {
       ok($type->can_be_deleted,
             "disalowed deletion of custom 1:1 mapping \n\t"
-          . $type->toString
           . "\t - should allow to delete");
     }
 
@@ -53,9 +46,7 @@ foreach my $type (@all_types) {
     ok($type->get_first_bibtex_type, "get_first_bibtex_type");
     ok(!$type->can_be_deleted,
           "allowed deletion of 1:N mapping \n\t"
-        . $type->toString
         . "\t - should not allow to delete");
-
   }
   else {
     is($type->num_bibtex_types, 0, "num_bibtex_types");

@@ -101,6 +101,12 @@ subtest 'edit_publication_post' => sub {
       {new_bib => $bib_content, check_key => 1});
 };
 
+# Ensure clean entry object for further tests
+@entries = $admin_user->app->repo->entries_all;
+$entry   = shift @entries;
+
+ok($entry->id > 0, "Example entry should have ID > 0");
+
 my $upload = {
   filetype      => 'paper',
   uploaded_file => {content => 'test', filename => 'test.pdf'}
@@ -121,8 +127,10 @@ $admin_user->post_ok(
   "Upload simple file OK"
 );
 
-ok(-e $self->app->get_upload_dir . "/papers/paper-" . $entry->id . ".pdf",
-  "uploaded simple file exists");
+ok(
+  -e $self->app->get_upload_dir . "/papers/paper-" . $entry->id . ".pdf",
+  "uploaded pdf file should exist for entry ID: '" . $entry->id . "'"
+);
 
 $page = $self->url_for(
   'download_publication_pdf',
@@ -164,6 +172,7 @@ $page = $self->url_for(
   filetype => 'paper',
   id       => $entry->id
 );
+
 $admin_user->get_ok($page, "Download real file OK: $page")
   ->status_isnt(404, "Checking: 404 $page")
   ->status_isnt(500, "Checking: 500 $page");
@@ -173,6 +182,7 @@ $page = $self->url_for(
   filetype => 'slides',
   id       => $entry->id
 );
+
 $admin_user->get_ok($page, "Download real file OK: $page")
   ->status_isnt(404, "Checking: 404 $page")
   ->status_isnt(500, "Checking: 500 $page");
@@ -253,6 +263,29 @@ subtest 'add_publication_post' => sub {
       {new_bib => '@bad_content!', save => 1});
 };
 
+subtest 'Add orphaned publication' => sub {
+
+  my @orph_entries = $admin_user->app->repo->entries_filter(
+    sub { scalar($_->get_authors) == 0 });
+  ok(scalar @orph_entries >= 0, "Some orphaned entries may exist beforehand");
+
+  my $random_string = random_string(16);
+
+  my $bib_content = '
+  @misc{key_2017_TEST' . $random_string . ',
+    publisher = {Foo Publishing house},
+    title = {{Selected aspects of some methods}},
+    year = {2017},
+  }';
+
+  $admin_user->post_ok($self->url_for('add_publication_post') => form =>
+      {new_bib => $bib_content, save => 1});
+
+  my @orph_entries = $admin_user->app->repo->entries_filter(
+    sub { scalar($_->get_authors) == 0 });
+  ok(scalar @orph_entries > 0, "Some orphaned entries exist");
+};
+
 # generated with: ./bin/bibspace routes | grep GET | grep -v :
 my @pages = (
   $self->url_for('publications'), $self->url_for('recently_added', num => 10),
@@ -312,8 +345,9 @@ my @pages = (
   $self->url_for('manage_attachments', id => 0),
   $self->url_for('manage_attachments', id => $entry->id),
 
-  $self->url_for('fix_attachment_urls', id => 0),
-  $self->url_for('fix_attachment_urls', id => $entry->id),
+  $self->url_for('fix_attachment_urls'),
+  $self->url_for('fix_attachment_urls')->query(id => 0),
+  $self->url_for('fix_attachment_urls')->query(id => $entry->id),
 
   $self->url_for('manage_exceptions', id => 0),
   $self->url_for('manage_exceptions', id => $entry->id),

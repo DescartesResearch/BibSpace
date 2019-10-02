@@ -55,24 +55,23 @@ our %mons = (
 sub all {
   my $self = shift;
 
-  my @all = Fget_publications_main_hashed_args($self, {year => undef});
+  my @all      = Fget_publications_main_hashed_args($self, {year => undef});
   my @filtered = Fget_publications_main_hashed_args($self, {}, \@all);
 
   $self->stash(entries => \@filtered, all_entries => \@all);
-  my $html = $self->render_to_string(template => 'publications/all');
-  $self->render(data => $html);
+  $self->render(template => 'publications/all');
 }
 
 sub all_recently_added {
   my $self = shift;
-  my $num = $self->param('num') // 10;
+  my $num  = $self->param('num') // 10;
 
   $self->app->logger->info("Displaying recently added entries.");
 
   my @all = Fget_publications_main_hashed_args($self, {year => undef});
   my @added_entries = sort { $b->creation_time cmp $a->creation_time } @all;
-  my $num_found = scalar @added_entries;
-  my $limit = $num < $num_found ? $num : $num_found;
+  my $num_found     = scalar @added_entries;
+  my $limit         = $num < $num_found ? $num : $num_found;
   @added_entries = @added_entries[0 .. $limit - 1];
 
   my @filtered = Fget_publications_main_hashed_args($self, {}, \@added_entries);
@@ -86,14 +85,14 @@ sub all_recently_added {
 
 sub all_recently_modified {
   my $self = shift;
-  my $num = $self->param('num') // 10;
+  my $num  = $self->param('num') // 10;
 
   $self->app->logger->info("Displaying recently modified entries.");
 
   my @all = Fget_publications_main_hashed_args($self, {year => undef});
   my @modified_entries = sort { $b->modified_time cmp $a->modified_time } @all;
-  my $num_found = scalar @modified_entries;
-  my $limit = $num < $num_found ? $num : $num_found;
+  my $num_found        = scalar @modified_entries;
+  my $limit            = $num < $num_found ? $num : $num_found;
   @modified_entries = @modified_entries[0 .. $limit - 1];
 
   my @filtered
@@ -107,13 +106,14 @@ sub all_recently_modified {
 }
 
 sub all_without_tag {
-  my $self = shift;
+  my $self    = shift;
   my $tagtype = $self->param('tagtype') // 1;
 
   # this will filter entries based on query
   my @all = Fget_publications_main_hashed_args($self, {year => undef});
 
-  my @untagged_entries = grep { scalar $_->get_tags($tagtype) == 0 } @all;
+  my @untagged_entries
+    = grep { scalar $_->get_tags_of_type($tagtype) == 0 } @all;
   my @filtered
     = Fget_publications_main_hashed_args($self, {}, \@untagged_entries);
 
@@ -152,13 +152,13 @@ sub show_unrelated_to_team {
   $self->app->logger->info("Displaying entries unrelated to team '$team_id'.");
 
   my $team_name = "";
-  my $team = $self->app->repo->teams_find(sub { $_->id == $team_id });
+  my $team      = $self->app->repo->teams_find(sub { $_->id == $team_id });
   $team_name = $team->name if defined $team;
 
-  my @all = Fget_publications_main_hashed_args($self, {year => undef});
+  my @all        = Fget_publications_main_hashed_args($self, {year => undef});
   my @teamEntres = $team->get_entries;
 
-  my %inTeam = map { $_ => 1 } @teamEntres;
+  my %inTeam           = map  { $_ => 1 } @teamEntres;
   my @entriesUnrelated = grep { not $inTeam{$_} } @all;
 
   # hash destroys order!
@@ -381,11 +381,11 @@ sub delete_orphaned {
     = $self->app->repo->entries_filter(sub { scalar($_->get_authors) == 0 });
 
   foreach my $entry (@entries) {
-    my @au = $entry->authorships_all;
+    my @au = $entry->get_authorships;
     $self->app->repo->authorships_delete(@au);
-    my @ex = $entry->exceptions_all;
+    my @ex = $entry->get_exceptions;
     $self->app->repo->exceptions_delete(@ex);
-    my @la = $entry->labelings_all;
+    my @la = $entry->get_labelings;
     $self->app->repo->labelings_delete(@la);
   }
 
@@ -405,7 +405,7 @@ sub fix_file_urls {
 
   my @all_entries;
 
-  if ($id) {
+  if ($id and $id > 0) {
     my $entry = $self->app->repo->entries_find(sub { $_->id == $id });
     push @all_entries, $entry if $entry;
   }
@@ -421,17 +421,15 @@ sub fix_file_urls {
 
     ++$num_checks;
     my $str;
-    $str .= "Entry " . $entry->id . ": ";
     $entry->discover_attachments($self->app->get_upload_dir);
     my @discovered_types = $entry->attachments_keys;
 
-    $str .= "has types: (";
-    foreach (@discovered_types) {
-      $str .= " $_, ";
-    }
-    $str .= "). Fixed: ";
+    $str .= "Entry " . $entry->id . ": ";
+    $str
+      .= "with types: ("
+      . join(" ", @discovered_types)
+      . "). Fixed the following: ";
 
-    # say $str;
     my $fixed;
     my $file     = $entry->get_attachment('paper');
     my $file_url = $self->url_for(
@@ -445,7 +443,7 @@ sub fix_file_urls {
       $str .= "\n\t";
       $entry->add_bibtex_field("pdf", "$file_url");
       $fixed = 1;
-      $str .= "Added Bibtex filed PDF " . $file_url;
+      $str .= "Added Bibtex field 'pdf = { " . $file_url . "}'";
     }
 
     $file     = $entry->get_attachment('slides');
@@ -460,7 +458,7 @@ sub fix_file_urls {
       $str .= "\n\t";
       $entry->add_bibtex_field("slides", "$file_url");
       $fixed = 1;
-      $str .= "Added Bibtex filed SLIDES " . $file_url;
+      $str .= "Added Bibtex field 'slides = { " . $file_url . "}'";
     }
     $str .= "\n";
 
@@ -766,7 +764,7 @@ sub regenerate_html_for_all {
 }
 
 sub regenerate_html_in_chunk {
-  my $self = shift;
+  my $self       = shift;
   my $chunk_size = $self->param('chunk_size') // 30;
 
   my $converter = $self->app->bibtexConverter;
@@ -864,9 +862,9 @@ sub delete_sure {
   }
 
   $entry->delete_all_attachments;
-  my @entry_authorships = $entry->authorships_all;
-  my @entry_labelings   = $entry->labelings_all;
-  my @entry_exceptions  = $entry->exceptions_all;
+  my @entry_authorships = $entry->get_authorships;
+  my @entry_labelings   = $entry->get_labelings;
+  my @entry_exceptions  = $entry->get_exceptions;
   $self->app->repo->authorships_delete(@entry_authorships);
   $self->app->repo->labelings_delete(@entry_labelings);
   $self->app->repo->exceptions_delete(@entry_exceptions);
@@ -889,8 +887,8 @@ sub show_authors_of_entry {
     return;
   }
 
-  my @authors = map { $_->author } $entry->authorships_all;
-  my @teams = $entry->get_teams;
+  my @authors = $entry->get_authors;
+  my @teams   = $entry->get_teams;
 
   $self->stash(entry => $entry, authors => \@authors, teams => \@teams);
   $self->render(template => 'publications/show_authors');
@@ -927,9 +925,7 @@ sub remove_tag {
 
   if (defined $entry and defined $tag) {
 
-    my $search_label = Labeling->new(
-      entry    => $entry,
-      tag      => $tag,
+    my $search_label = $self->app->repo->entityFactory->new_Labeling(
       entry_id => $entry->id,
       tag_id   => $tag->id
     );
@@ -971,9 +967,7 @@ sub add_tag {
   my $tag   = $self->app->repo->tags_find(sub    { $_->id == $tag_id });
 
   if (defined $entry and defined $tag) {
-    my $label = Labeling->new(
-      entry    => $entry,
-      tag      => $tag,
+    my $label = $self->app->repo->entityFactory->new_Labeling(
       entry_id => $entry->id,
       tag_id   => $tag->id
     );
@@ -1005,13 +999,13 @@ sub manage_exceptions {
     return;
   }
 
-  my @exceptions = $entry->exceptions_all;
+  my @exceptions = $entry->get_exceptions;
   my @all_teams  = $self->app->repo->teams_all;
   my @teams      = $entry->get_teams;
   my @authors    = $entry->get_authors;
 
   # cannot use objects as keysdue to stringification!
-  my %exceptions_hash = map { $_->team->id => 1 } @exceptions;
+  my %exceptions_hash  = map  { $_->team->id => 1 } @exceptions;
   my @unassigned_teams = grep { not $exceptions_hash{$_->id} } @all_teams;
 
   $self->stash(
@@ -1036,7 +1030,7 @@ sub add_exception {
 
   if (defined $entry and defined $team) {
 
-    my $exception = Exception->new(
+    my $exception = $self->app->repo->entityFactory->new_Exception(
       entry    => $entry,
       team     => $team,
       entry_id => $entry->id,
@@ -1079,11 +1073,9 @@ sub remove_exception {
 
   if (defined $entry and defined $team) {
 
-    my $ex = Exception->new(
+    my $ex = $self->app->repo->entityFactory->new_Exception(
       team_id  => $team_id,
       entry_id => $entry_id,
-      team     => $team,
-      entry    => $entry
     );
 
     my $exception = $self->app->repo->exceptions_find(sub { $_->equals($ex) });
@@ -1247,6 +1239,7 @@ sub publications_add_post {
   # any action
   my $existing_entry = $self->app->repo->entries_find(
     sub { $_->bibtex_key eq $entry->bibtex_key });
+
   if ($existing_entry) {
     $status_code_str = 'KEY_TAKEN';
     my $msg_type = 'danger';
@@ -1288,7 +1281,7 @@ sub publications_add_post {
     $added_under_id = $entry->id;
 
     ## !!! the entry must be added before executing Freassign_authors_to_entries_given_by_array
-    ## why? beacuse authorship will be unable to map existing entry to the author
+    ## why? because authorship will be unable to map existing entry to the author
     Freassign_authors_to_entries_given_by_array($self->app, 1, [$entry]);
 
     my $msg_type = 'success';
@@ -1310,7 +1303,7 @@ sub publications_add_post {
 
 sub publications_edit_get {
   my $self = shift;
-  my $id = $self->param('id') || -1;
+  my $id   = $self->param('id') || -1;
 
   $self->app->logger->info("Editing publication entry id $id");
 

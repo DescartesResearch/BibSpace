@@ -1,8 +1,10 @@
 
-## BibSpace Installation ##
+# BibSpace Installation
 
+## Native Installation
 
-### Quick installation for Debian-based operating systems ###
+Tested for Debian-based operating systems.
+
 ```bash
 cd ~
 sudo aptitude update
@@ -13,7 +15,7 @@ sudo aptitude install build-essential make git curl vim cpanminus mysql-server m
 git clone https://github.com/vikin91/BibSpace.git --depth 1
 cd BibSpace
 
-# install prerequisites 
+# install prerequisites
 cpanm -nq --no-interactive --installdeps .
 
 # config mysql
@@ -23,48 +25,43 @@ prove -lr
 # if all tests pass then the system is ready for use
 ```
 
+## Running Natively-installed BibSpace
 
-### Running BibSpace ###
+If all tests are passed then you may finally start BibSpace.
 
-If all tests are passed then you may finally **start BibSpace**
+Due to incompatibility with perfork, I recomend using the *build-in server* for BibSpace `v0.5.x`:
 
 ```bash
-# provide config
-export BIBSPACE_CONFIG=lib/BibSpace/files/config/default.conf 
-# using hypnotoad (currently not recomended for version 0.5.0 due to prefork)
-hypnotoad ./bin/bibspace
-# using built-in server
+export BIBSPACE_CONFIG=lib/BibSpace/files/config/default.conf
 bin/bibspace daemon -m production -l http://*:8080
 ```
 
-To **stop BibSpace** 
+However, for other versions, in particular `0.6.x`, the `hypnotoad` may be used:
+
+```bash
+export BIBSPACE_CONFIG=lib/BibSpace/files/config/default.conf
+hypnotoad ./bin/bibspace
+```
+
+To **stop BibSpace**
 ```bash
 hypnotoad -s ./bin/bibspace
 ```
 
+Bibspace may also be run in **developer mode** to see all errors and debug messages.
 
-you may also run it in **developer mode** to see errors, debug messages etc.
 ```bash
 morbo -l http://*:8080 ./bin/bibspace
-# or 
+# or alternatively
 bin/bibspace daemon -m development -l http://*:8080
 ```
 
-
 Finally, you mah head to your browser, **login, and use the system**
+
 ```
 http://YOUR_SERVER_IP:8080
 Admin login: pub_admin
 Admin password: asdf
 ```
-Remeber to cofigure your firewall if you cannot connect to the port 8080.
 
-### Running BibSpace in Production ###
-
-#### TODO ####
-- [] Configure reverse proxy nginx
-- [] Configure reverse proxy apache2
-
-
-
-
+Configure your firewall allow traffic on port 8080 if you cannot connect to the port 8080.

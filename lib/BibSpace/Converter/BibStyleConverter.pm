@@ -75,7 +75,7 @@ sub _convert_bib_to_bbl {
 
   my $warnings_arr_ref = $bibstyle->{warnings};
 
-  my $bbl_dirty = join '', @bibstyle_output;
+  my $bbl_dirty           = join '', @bibstyle_output;
   my $dirty_bbl_array_ref = \@bibstyle_output;
 
   return ($bbl_dirty, $dirty_bbl_array_ref, $warnings_arr_ref);
@@ -114,7 +114,7 @@ sub _clean_bbl {
   }
 
   my $useful_str = join '', @useful_lines;
-  my $s = $useful_str;
+  my $s          = $useful_str;
 
   # say "\nXXXX1\n".$s."\nXXXX\n";
 
@@ -156,7 +156,7 @@ sub _clean_bbl {
   my $new_s = "";
   $new_s = string_replace_with_counting($s, '{', '}', '{', '}', '', '');
   while ($new_s ne $s) {
-    $s = $new_s;
+    $s     = $new_s;
     $new_s = string_replace_with_counting($s, '{', '}', '{', '}', '', '');
   }
 
@@ -196,7 +196,7 @@ sub _add_html_links {
     push @code, build_link('slides', $entry->get('slides'));
   }
   if ($entry->exists('doi')) {
-    push @code, build_link('DOI', "http://dx.doi.org/" . $entry->get('doi'));
+    push @code, build_link('DOI', "https://doi.org/" . $entry->get('doi'));
   }
   if ($entry->exists('url')) {
     push @code, build_link('http', $entry->get('url'));
@@ -403,7 +403,7 @@ sub delatexify {
 
 =item string_replace_with_counting
   uses counting to do strin replace
-  Example:  
+  Example:
     single runn of 'string_replace_with_counting' with parameters
       s = aaa{bbb{cc{dd}}}
       opening = {
@@ -413,11 +413,11 @@ sub delatexify {
       opening_replace = ''
       closing replace = ''
     returns: aaa{bbb{ccdd}}
-    next run: 
+    next run:
     returns: aaa{bbbccdd}
-    next run: 
+    next run:
     returns: aaabbbccdd
-=cut 
+=cut
 
 sub string_replace_with_counting {
   my ($s, $opening, $closing, $avoid_l, $avoid_r, $opening_replace,
@@ -436,7 +436,7 @@ sub string_replace_with_counting {
   my $index_closing = -1;
 
   my @str_arr = split //, $s;
-  my $max = scalar @str_arr;
+  my $max     = scalar @str_arr;
 
   my $l_brackets = 0;
   my $r_brackets = 0;
